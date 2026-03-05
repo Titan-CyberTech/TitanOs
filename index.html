@@ -1,105 +1,1466 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="TitanOs Firmware – Firmware ESP32 open-source pour la sécurité offensive, adapté aux T‑Display-S3 et à d’autres cartes.">
-  <meta name="keywords" content="ESP32, firmware, sécurité offensive, T-Display-S3, open-source">
-  <meta name="author" content="TitanOs">
-  <title>TitanOs Firmware - Sécurité Offensive pour ESP32</title>
-  <!-- Google Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
-  <!-- Favicon et manifest -->
-  <link rel="apple-touch-icon" sizes="180x180" href="favicon/apple-touch-icon.png">
-  <link rel="icon" type="image/png" sizes="32x32" href="favicon/favicon-32x32.png">
-  <link rel="manifest" href="favicon/site.webmanifest">
-  <link rel="stylesheet" href="style.css">
+  <meta name="description" content="TitanOs — Open-source offensive security firmware for Lilygo T-Display-S3 (ESP32-S3)">
+  <meta name="keywords" content="ESP32, firmware, offensive security, T-Display-S3, WiFi deauth, evil portal, open-source">
+  <meta name="author" content="Titan-CyberTech">
+  <title>TitanOs — ESP32 Offensive Firmware</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow:wght@300;400;600;700;900&family=Barlow+Condensed:wght@700;900&display=swap" rel="stylesheet">
+
+  <style>
+    /* ═══════════════════════════════════════════════
+       VARIABLES & RESET
+    ═══════════════════════════════════════════════ */
+    :root {
+      --bg:        #050507;
+      --bg2:       #0c0c10;
+      --bg3:       #111118;
+      --accent:    #7c3aed;
+      --accent2:   #a855f7;
+      --accent3:   #c084fc;
+      --glow:      rgba(124, 58, 237, 0.4);
+      --danger:    #ef4444;
+      --ok:        #22c55e;
+      --text:      #e2e8f0;
+      --muted:     #64748b;
+      --border:    rgba(124, 58, 237, 0.2);
+      --mono:      'Share Tech Mono', monospace;
+      --sans:      'Barlow', sans-serif;
+      --cond:      'Barlow Condensed', sans-serif;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--text);
+      overflow-x: hidden;
+    }
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+
+    /* ═══════════════════════════════════════════════
+       SCROLLBAR
+    ═══════════════════════════════════════════════ */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 2px; }
+
+    /* ═══════════════════════════════════════════════
+       NOISE OVERLAY
+    ═══════════════════════════════════════════════ */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 9999;
+      opacity: 0.35;
+    }
+
+    /* ═══════════════════════════════════════════════
+       GRID BACKGROUND
+    ═══════════════════════════════════════════════ */
+    .grid-bg {
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(124,58,237,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(124,58,237,0.04) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ═══════════════════════════════════════════════
+       HEADER / NAV
+    ═══════════════════════════════════════════════ */
+    header {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      border-bottom: 1px solid var(--border);
+      background: rgba(5, 5, 7, 0.85);
+      backdrop-filter: blur(12px);
+    }
+    nav {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .nav-logo {
+      font-family: var(--cond);
+      font-size: 1.4rem;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .nav-logo span { color: var(--accent2); }
+    .logo-chip {
+      width: 28px; height: 28px;
+      border: 2px solid var(--accent);
+      border-radius: 4px;
+      display: grid;
+      place-items: center;
+      position: relative;
+    }
+    .logo-chip::before {
+      content: '';
+      width: 10px; height: 10px;
+      background: var(--accent2);
+      border-radius: 2px;
+      box-shadow: 0 0 8px var(--accent2);
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .nav-link {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      color: var(--muted);
+      padding: 6px 12px;
+      border-radius: 4px;
+      transition: color 0.2s, background 0.2s;
+      letter-spacing: 0.05em;
+    }
+    .nav-link:hover { color: var(--text); background: rgba(124,58,237,0.1); }
+    .nav-link.active { color: var(--accent2); }
+    .btn-nav {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      letter-spacing: 0.05em;
+      background: var(--accent);
+      color: #fff;
+      padding: 7px 16px;
+      border-radius: 4px;
+      border: 1px solid var(--accent2);
+      transition: background 0.2s, box-shadow 0.2s;
+    }
+    .btn-nav:hover {
+      background: var(--accent2);
+      box-shadow: 0 0 20px var(--glow);
+    }
+    .hamburger {
+      display: none;
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--text);
+      width: 36px; height: 36px;
+      border-radius: 4px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    /* ═══════════════════════════════════════════════
+       HERO
+    ═══════════════════════════════════════════════ */
+    .hero {
+      position: relative;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      padding: 80px 24px 60px;
+      overflow: hidden;
+    }
+    .hero-orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      pointer-events: none;
+    }
+    .hero-orb-1 {
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(124,58,237,0.25) 0%, transparent 70%);
+      top: -100px; right: -150px;
+    }
+    .hero-orb-2 {
+      width: 400px; height: 400px;
+      background: radial-gradient(circle, rgba(168,85,247,0.12) 0%, transparent 70%);
+      bottom: 0; left: -100px;
+    }
+    .hero-inner {
+      position: relative;
+      z-index: 1;
+      max-width: 1200px;
+      margin: 0 auto;
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 60px;
+      align-items: center;
+    }
+    .hero-tag {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      color: var(--accent2);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 20px;
+      opacity: 0;
+      animation: fadeUp 0.6s 0.1s forwards;
+    }
+    .hero-tag::before {
+      content: '';
+      width: 24px; height: 1px;
+      background: var(--accent2);
+    }
+    .hero h1 {
+      font-family: var(--cond);
+      font-size: clamp(3rem, 6vw, 5.5rem);
+      font-weight: 900;
+      line-height: 0.95;
+      letter-spacing: -0.02em;
+      color: #fff;
+      opacity: 0;
+      animation: fadeUp 0.6s 0.2s forwards;
+    }
+    .hero h1 em {
+      font-style: normal;
+      color: var(--accent2);
+      display: block;
+    }
+    .hero-sub {
+      font-size: 1rem;
+      color: var(--muted);
+      line-height: 1.7;
+      margin-top: 20px;
+      max-width: 460px;
+      opacity: 0;
+      animation: fadeUp 0.6s 0.35s forwards;
+    }
+    .hero-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 28px;
+      opacity: 0;
+      animation: fadeUp 0.6s 0.45s forwards;
+    }
+    .badge {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      letter-spacing: 0.1em;
+      padding: 4px 10px;
+      border-radius: 3px;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      background: rgba(124,58,237,0.06);
+    }
+    .badge.green { border-color: rgba(34,197,94,0.3); color: var(--ok); background: rgba(34,197,94,0.06); }
+    .badge.red   { border-color: rgba(239,68,68,0.3);  color: var(--danger); background: rgba(239,68,68,0.06); }
+    .hero-cta {
+      display: flex;
+      gap: 12px;
+      margin-top: 36px;
+      flex-wrap: wrap;
+      opacity: 0;
+      animation: fadeUp 0.6s 0.55s forwards;
+    }
+    .btn-primary {
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      letter-spacing: 0.08em;
+      background: var(--accent);
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 4px;
+      border: 1px solid var(--accent2);
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-primary:hover {
+      background: var(--accent2);
+      box-shadow: 0 0 30px var(--glow);
+      transform: translateY(-2px);
+    }
+    .btn-ghost {
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      letter-spacing: 0.08em;
+      background: transparent;
+      color: var(--text);
+      padding: 12px 24px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-ghost:hover {
+      border-color: var(--accent);
+      color: var(--accent2);
+      background: rgba(124,58,237,0.06);
+    }
+
+    /* Device mockup */
+    .hero-device {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      opacity: 0;
+      animation: fadeIn 0.8s 0.5s forwards;
+    }
+    .device {
+      width: 260px;
+      background: #0e0e14;
+      border-radius: 16px;
+      border: 2px solid rgba(124,58,237,0.4);
+      box-shadow:
+        0 0 0 4px rgba(124,58,237,0.08),
+        0 0 60px rgba(124,58,237,0.2),
+        0 40px 80px rgba(0,0,0,0.6);
+      overflow: hidden;
+      position: relative;
+    }
+    .device-screen {
+      width: 100%;
+      aspect-ratio: 320/170;
+      background: #050507;
+      position: relative;
+      overflow: hidden;
+      font-family: var(--mono);
+    }
+    /* Simulated UI on screen */
+    .sim-topbar {
+      height: 18px;
+      background: #111118;
+      border-bottom: 1px solid rgba(124,58,237,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 6px;
+    }
+    .sim-topbar span { font-size: 5px; color: var(--accent2); letter-spacing: 0.05em; }
+    .sim-batt {
+      width: 16px; height: 7px;
+      border: 1px solid #22c55e;
+      border-radius: 1px;
+      position: relative;
+    }
+    .sim-batt::after {
+      content: '';
+      position: absolute;
+      left: 1px; top: 1px;
+      width: 70%; height: calc(100% - 2px);
+      background: #22c55e;
+      border-radius: 1px;
+    }
+    .sim-menu {
+      padding: 4px 4px;
+    }
+    .sim-item {
+      height: 16px;
+      border-radius: 2px;
+      margin-bottom: 2px;
+      display: flex;
+      align-items: center;
+      padding: 0 5px;
+    }
+    .sim-item.sel { background: var(--accent); }
+    .sim-item span { font-size: 5px; color: var(--text); letter-spacing: 0.08em; }
+    .sim-item.sel span { color: #000; }
+    .sim-botbar {
+      height: 14px;
+      background: #111118;
+      border-top: 1px solid rgba(124,58,237,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      padding: 0 6px;
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+    }
+    .sim-botbar span { font-size: 4px; color: var(--accent2); }
+    .device-body {
+      padding: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .device-btn {
+      width: 8px; height: 24px;
+      background: #1a1a24;
+      border-radius: 2px;
+      border: 1px solid rgba(124,58,237,0.3);
+    }
+    .device-label {
+      font-family: var(--mono);
+      font-size: 0.5rem;
+      color: var(--muted);
+      text-align: center;
+      letter-spacing: 0.1em;
+    }
+    /* Scan line effect */
+    .device-screen::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,0,0,0.08) 2px,
+        rgba(0,0,0,0.08) 4px
+      );
+      pointer-events: none;
+    }
+
+    /* ═══════════════════════════════════════════════
+       STATS BAR
+    ═══════════════════════════════════════════════ */
+    .stats-bar {
+      position: relative;
+      z-index: 1;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      background: var(--bg2);
+    }
+    .stats-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+    }
+    .stat {
+      padding: 24px 20px;
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .stat:last-child { border-right: none; }
+    .stat-val {
+      font-family: var(--cond);
+      font-size: 2rem;
+      font-weight: 900;
+      color: #fff;
+      line-height: 1;
+    }
+    .stat-val span { color: var(--accent2); }
+    .stat-label {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      color: var(--muted);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    /* ═══════════════════════════════════════════════
+       SECTIONS
+    ═══════════════════════════════════════════════ */
+    section {
+      position: relative;
+      z-index: 1;
+    }
+    .section-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 100px 24px;
+    }
+    .section-label {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      color: var(--accent2);
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .section-label::after {
+      content: '';
+      flex: 1;
+      max-width: 60px;
+      height: 1px;
+      background: var(--accent);
+    }
+    .section-title {
+      font-family: var(--cond);
+      font-size: clamp(2rem, 4vw, 3.2rem);
+      font-weight: 900;
+      color: #fff;
+      line-height: 1.05;
+      letter-spacing: -0.01em;
+      margin-bottom: 16px;
+    }
+    .section-desc {
+      font-size: 1rem;
+      color: var(--muted);
+      line-height: 1.7;
+      max-width: 540px;
+    }
+
+    /* ═══════════════════════════════════════════════
+       FEATURES GRID
+    ═══════════════════════════════════════════════ */
+    #features { background: var(--bg2); }
+    .features-header {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 60px;
+      align-items: end;
+      margin-bottom: 60px;
+    }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .feat {
+      background: var(--bg2);
+      padding: 32px 28px;
+      transition: background 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+    .feat::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--accent), transparent);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .feat:hover { background: #0f0f16; }
+    .feat:hover::before { opacity: 1; }
+    .feat-icon {
+      font-size: 1.6rem;
+      margin-bottom: 16px;
+      display: block;
+    }
+    .feat h3 {
+      font-family: var(--cond);
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: 0.02em;
+      margin-bottom: 8px;
+    }
+    .feat p {
+      font-size: 0.88rem;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+    .feat-tag {
+      display: inline-block;
+      margin-top: 14px;
+      font-family: var(--mono);
+      font-size: 0.6rem;
+      letter-spacing: 0.1em;
+      color: var(--accent3);
+      border: 1px solid rgba(124,58,237,0.3);
+      padding: 2px 8px;
+      border-radius: 2px;
+    }
+    .feat-tag.new { color: var(--ok); border-color: rgba(34,197,94,0.3); }
+
+    /* ═══════════════════════════════════════════════
+       ATTACK SECTION
+    ═══════════════════════════════════════════════ */
+    #attacks { background: var(--bg); }
+    .attacks-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 60px;
+      align-items: center;
+    }
+    .attack-card {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .attack-card-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .attack-card-header h4 {
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      color: var(--accent2);
+      letter-spacing: 0.08em;
+    }
+    .dot { width: 6px; height: 6px; border-radius: 50%; }
+    .dot.red { background: var(--danger); box-shadow: 0 0 6px var(--danger); }
+    .dot.green { background: var(--ok); box-shadow: 0 0 6px var(--ok); }
+    .attack-card-body { padding: 20px; }
+    .terminal-line {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      line-height: 1.9;
+      color: var(--muted);
+    }
+    .terminal-line .prompt { color: var(--accent2); }
+    .terminal-line .val { color: #fff; }
+    .terminal-line .ok { color: var(--ok); }
+    .terminal-line .err { color: var(--danger); }
+    .terminal-line .num { color: var(--accent3); }
+    .attack-cards-stack { display: flex; flex-direction: column; gap: 12px; }
+
+    /* ═══════════════════════════════════════════════
+       INSTALL SECTION
+    ═══════════════════════════════════════════════ */
+    #install { background: var(--bg2); }
+    .install-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: start;
+    }
+    .steps { display: flex; flex-direction: column; gap: 0; }
+    .step {
+      display: flex;
+      gap: 20px;
+      padding-bottom: 32px;
+      position: relative;
+    }
+    .step:last-child { padding-bottom: 0; }
+    .step-line {
+      position: absolute;
+      left: 15px;
+      top: 32px;
+      bottom: 0;
+      width: 1px;
+      background: linear-gradient(to bottom, var(--accent), transparent);
+    }
+    .step:last-child .step-line { display: none; }
+    .step-num {
+      width: 32px; height: 32px;
+      min-width: 32px;
+      border-radius: 50%;
+      border: 1px solid var(--accent);
+      display: grid;
+      place-items: center;
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      color: var(--accent2);
+      background: var(--bg);
+      position: relative;
+      z-index: 1;
+    }
+    .step-content h4 {
+      font-family: var(--cond);
+      font-size: 1rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 6px;
+      margin-top: 4px;
+    }
+    .step-content p {
+      font-size: 0.85rem;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+    .code-block {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 14px 16px;
+      margin-top: 10px;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      color: var(--accent3);
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+    .install-right { display: flex; flex-direction: column; gap: 16px; }
+    .spec-table {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .spec-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.82rem;
+    }
+    .spec-row:last-child { border-bottom: none; }
+    .spec-key {
+      padding: 10px 16px;
+      font-family: var(--mono);
+      color: var(--muted);
+      font-size: 0.72rem;
+      border-right: 1px solid var(--border);
+    }
+    .spec-val {
+      padding: 10px 16px;
+      color: var(--text);
+      font-size: 0.82rem;
+    }
+    .flash-box {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 24px;
+      text-align: center;
+    }
+    .flash-box p {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-bottom: 16px;
+      line-height: 1.6;
+    }
+
+    /* ═══════════════════════════════════════════════
+       CHANGELOG SECTION
+    ═══════════════════════════════════════════════ */
+    #changelog { background: var(--bg); }
+    .changelog-layout {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 60px;
+      align-items: start;
+    }
+    .version-list { display: flex; flex-direction: column; gap: 2px; }
+    .version-btn {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      letter-spacing: 0.06em;
+      padding: 10px 14px;
+      border-radius: 4px;
+      border: 1px solid transparent;
+      background: none;
+      color: var(--muted);
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .version-btn:hover { color: var(--text); background: rgba(124,58,237,0.06); }
+    .version-btn.active {
+      color: var(--accent2);
+      background: rgba(124,58,237,0.1);
+      border-color: var(--border);
+    }
+    .version-badge {
+      font-size: 0.6rem;
+      padding: 2px 6px;
+      border-radius: 2px;
+      background: rgba(34,197,94,0.15);
+      color: var(--ok);
+      border: 1px solid rgba(34,197,94,0.3);
+    }
+    .version-badge.old { background: rgba(100,116,139,0.1); color: var(--muted); border-color: var(--border); }
+    .changelog-content { display: none; }
+    .changelog-content.active { display: block; }
+    .changelog-header {
+      display: flex;
+      align-items: baseline;
+      gap: 16px;
+      margin-bottom: 32px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .changelog-version {
+      font-family: var(--cond);
+      font-size: 2.5rem;
+      font-weight: 900;
+      color: #fff;
+    }
+    .changelog-date {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      color: var(--muted);
+    }
+    .changelog-group { margin-bottom: 28px; }
+    .changelog-group-title {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--accent2);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .changelog-group-title::before {
+      content: '';
+      width: 16px; height: 1px;
+      background: var(--accent);
+    }
+    .changelog-items { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+    .changelog-items li {
+      font-size: 0.88rem;
+      color: var(--muted);
+      padding-left: 16px;
+      position: relative;
+      line-height: 1.5;
+    }
+    .changelog-items li::before {
+      content: '→';
+      position: absolute;
+      left: 0;
+      color: var(--accent);
+      font-size: 0.7rem;
+    }
+    .changelog-items li strong { color: var(--text); }
+
+    /* ═══════════════════════════════════════════════
+       COMMUNITY / FOOTER
+    ═══════════════════════════════════════════════ */
+    #community {
+      background: var(--bg2);
+      border-top: 1px solid var(--border);
+    }
+    .community-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 80px 24px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 60px;
+      align-items: center;
+    }
+    .community-links { display: flex; flex-direction: column; gap: 12px; }
+    .community-link {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 16px 20px;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      transition: all 0.2s;
+    }
+    .community-link:hover {
+      border-color: var(--accent);
+      background: rgba(124,58,237,0.06);
+      transform: translateX(4px);
+    }
+    .community-link-icon {
+      width: 40px; height: 40px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      font-size: 1.1rem;
+      flex-shrink: 0;
+    }
+    .community-link-icon.discord { background: rgba(88,101,242,0.2); }
+    .community-link-icon.youtube { background: rgba(255,0,0,0.15); }
+    .community-link-icon.github  { background: rgba(255,255,255,0.05); }
+    .community-link-text h4 { font-size: 0.9rem; font-weight: 600; color: #fff; margin-bottom: 2px; }
+    .community-link-text p  { font-size: 0.78rem; color: var(--muted); }
+    .community-link-arrow { margin-left: auto; color: var(--muted); font-size: 0.8rem; }
+
+    footer {
+      background: var(--bg);
+      border-top: 1px solid var(--border);
+      padding: 24px;
+    }
+    .footer-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .footer-copy {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      color: var(--muted);
+      letter-spacing: 0.05em;
+    }
+    .footer-warning {
+      font-family: var(--mono);
+      font-size: 0.6rem;
+      color: rgba(239,68,68,0.5);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* ═══════════════════════════════════════════════
+       ANIMATIONS
+    ═══════════════════════════════════════════════ */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0; }
+    }
+    .cursor { animation: blink 1s infinite; }
+
+    /* Scroll reveal */
+    .reveal {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.6s, transform 0.6s;
+    }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+    .reveal-delay-1 { transition-delay: 0.1s; }
+    .reveal-delay-2 { transition-delay: 0.2s; }
+    .reveal-delay-3 { transition-delay: 0.3s; }
+
+    /* ═══════════════════════════════════════════════
+       RESPONSIVE
+    ═══════════════════════════════════════════════ */
+    @media (max-width: 900px) {
+      .hero-inner { grid-template-columns: 1fr; }
+      .hero-device { display: none; }
+      .features-header { grid-template-columns: 1fr; gap: 20px; }
+      .features-grid { grid-template-columns: 1fr 1fr; }
+      .attacks-layout { grid-template-columns: 1fr; }
+      .install-layout { grid-template-columns: 1fr; }
+      .changelog-layout { grid-template-columns: 1fr; }
+      .community-inner { grid-template-columns: 1fr; }
+      .stats-inner { grid-template-columns: 1fr 1fr; }
+      .stat { border-right: none; border-bottom: 1px solid var(--border); }
+    }
+    @media (max-width: 600px) {
+      .nav-links { display: none; flex-direction: column; position: absolute; top: 60px; left: 0; right: 0; background: rgba(5,5,7,0.98); padding: 12px; border-bottom: 1px solid var(--border); }
+      .nav-links.open { display: flex; }
+      .hamburger { display: block; }
+      .features-grid { grid-template-columns: 1fr; }
+      .stats-inner { grid-template-columns: 1fr 1fr; }
+      .hero h1 { font-size: 2.8rem; }
+      .section-inner { padding: 60px 16px; }
+    }
+
+    /* ═══════════════════════════════════════════════
+       WARNING BANNER
+    ═══════════════════════════════════════════════ */
+    .warning-banner {
+      background: rgba(239,68,68,0.06);
+      border-bottom: 1px solid rgba(239,68,68,0.2);
+      padding: 8px 24px;
+      text-align: center;
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      color: rgba(239,68,68,0.7);
+      letter-spacing: 0.08em;
+    }
+  </style>
 </head>
 <body>
+  <div class="grid-bg"></div>
+
+  <!-- WARNING -->
+  <div class="warning-banner">
+    ⚠ FOR EDUCATIONAL USE ONLY — Never use attack features on networks you do not own or without explicit permission
+  </div>
+
   <!-- HEADER -->
-  <header class="header">
-    <div class="container">
-      <nav class="nav" role="navigation" aria-label="Navigation principale">
-        <a href="index.html" class="logo" aria-label="Accueil TitanOs">
-          <img src="assets/img/titanos.png" alt="Logo TitanOs">
-        </a>
-        <button class="hamburger" id="hamburger-btn" aria-label="Menu" aria-expanded="false" aria-controls="nav-links">☰</button>
-        <div class="nav-links" id="nav-links">
-          <a href="index.html" class="nav-link">Home</a>
-          <a href="https://github.com/Titan-CyberTech/TitanOs-Firmware-TS3" target="_blank" rel="noopener noreferrer" class="nav-link">GitHub</a>
-          <a href="flasher.html" class="nav-link btn-inst">Install</a>
-          <a href="docs.html" class="nav-link">Docs</a>
-          <a href="boards.html" class="nav-link">Boards</a>
-          <a href="donate.html" class="nav-link">Donate</a>
-        </div>
-      </nav>
-    </div>
+  <header>
+    <nav>
+      <a href="#" class="nav-logo">
+        <div class="logo-chip"></div>
+        TITAN<span>OS</span>
+      </a>
+      <div class="nav-links" id="nav-links">
+        <a href="#features"   class="nav-link">Features</a>
+        <a href="#attacks"    class="nav-link">Attacks</a>
+        <a href="#install"    class="nav-link">Install</a>
+        <a href="#changelog"  class="nav-link">Changelog</a>
+        <a href="#community"  class="nav-link">Community</a>
+        <a href="https://github.com/Titan-CyberTech/TitanOs-Firmware-TS3" target="_blank" class="btn-nav">GitHub ↗</a>
+      </div>
+      <button class="hamburger" id="hamburger" onclick="document.getElementById('nav-links').classList.toggle('open')">☰</button>
+    </nav>
   </header>
 
-  <!-- MAIN -->
-  <main>
-    <!-- Section Hero -->
-    <section class="hero-container">
-      <div class="hero">
-        <div class="hero-overlay"></div>
-        <div class="hero-content">
-          <h1 class="animate-fadeIn">TitanOs Firmware</h1>
-          <p class="animate-fadeIn delay-1">
-            Firmware ESP32 open-source pour la sécurité offensive – Conçu pour le T‑Display-S3 et évolutif pour d’autres cartes.
-          </p>
-          <div class="cta-buttons animate-fadeIn delay-2">
-            <a href="https://github.com/Titan-CyberTech/TitanOs-Firmware-TS3" target="_blank" rel="noopener noreferrer" class="btn">Explore GitHub</a>
-            <a href="flasher.html" class="btn-install"><strong>Install Now</strong></a>
-          </div>
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-orb hero-orb-1"></div>
+    <div class="hero-orb hero-orb-2"></div>
+    <div class="hero-inner">
+      <div class="hero-left">
+        <div class="hero-tag">v2.0.0 — T-Display-S3</div>
+        <h1>
+          Offensive<br>
+          <em>Security</em>
+          Firmware
+        </h1>
+        <p class="hero-sub">
+          Open-source firmware for the Lilygo T-Display-S3 (ESP32-S3).
+          Modern double-buffered UI, WiFi attacks, Snake game, and full battery management — controlled with just 2 buttons.
+        </p>
+        <div class="hero-badges">
+          <span class="badge green">MIT License</span>
+          <span class="badge">ESP32-S3</span>
+          <span class="badge">320×170 ST7789</span>
+          <span class="badge red">WiFi Deauth</span>
+          <span class="badge red">Evil Portal</span>
+          <span class="badge">BLE (v2.1)</span>
+        </div>
+        <div class="hero-cta">
+          <a href="#install" class="btn-primary">⚡ Install Firmware</a>
+          <a href="https://github.com/Titan-CyberTech/TitanOs-Firmware-TS3" target="_blank" class="btn-ghost">View on GitHub →</a>
         </div>
       </div>
-    </section>
 
-    <!-- Section Présentation -->
-    <section class="features">
-      <div class="container">
-        <h2 class="section-title">Pourquoi choisir TitanOs ?</h2>
-        <div class="feature-grid">
-          <div class="feature-item animate-fadeIn">
-            <h3>⚡ Open-Source</h3>
-            <p>Licence AGPL et matériel sous CERN-OHL-P-2.0 garantissant liberté et transparence.</p>
+      <!-- Device mockup -->
+      <div class="hero-device">
+        <div class="device">
+          <div class="device-screen">
+            <div class="sim-topbar">
+              <span>TITANOS</span>
+              <span>v2.0.0</span>
+              <div class="sim-batt"></div>
+            </div>
+            <div class="sim-menu">
+              <div class="sim-item sel"><span>▶ WiFi Attack</span></div>
+              <div class="sim-item"><span>&nbsp;&nbsp;BLE Attack</span></div>
+              <div class="sim-item"><span>&nbsp;&nbsp;Games</span></div>
+              <div class="sim-item"><span>&nbsp;&nbsp;Settings</span></div>
+              <div class="sim-item"><span>&nbsp;&nbsp;System Info</span></div>
+            </div>
+            <div class="sim-botbar">
+              <span>[A] Select</span>
+              <span>[B] Navigate</span>
+            </div>
           </div>
-          <div class="feature-item animate-fadeIn delay-1">
-            <h3>💻 Multi-cartes</h3>
-            <p>Optimisé pour le T‑Display-S3 avec des extensions prévues pour d'autres cartes.</p>
-          </div>
-          <div class="feature-item animate-fadeIn delay-2">
-            <h3>📶 Attaques Wi-Fi</h3>
-            <p>Intègre des modes Deauth et Evil Portal pour tester la robustesse des réseaux.</p>
-          </div>
-          <div class="feature-item animate-fadeIn delay-3">
-            <h3>🎮 Interactivité</h3>
-            <p>Jeu Snake et interface intuitive accessible via boutons pour une navigation fluide.</p>
-          </div>
-          <div class="feature-item animate-fadeIn delay-4">
-            <h3>🔋 Gestion de Batterie</h3>
-            <p>Surveillance en temps réel du voltage et du pourcentage de charge pour une meilleure autonomie.</p>
+          <div class="device-body">
+            <div class="device-btn"></div>
+            <div class="device-label">T-DISPLAY-S3</div>
+            <div class="device-btn"></div>
           </div>
         </div>
       </div>
-    </section>
-  </main>
+    </div>
+  </section>
+
+  <!-- STATS BAR -->
+  <div class="stats-bar">
+    <div class="stats-inner">
+      <div class="stat reveal">
+        <div class="stat-val">2<span>.0</span></div>
+        <div class="stat-label">Current Version</div>
+      </div>
+      <div class="stat reveal reveal-delay-1">
+        <div class="stat-val">5<span>+</span></div>
+        <div class="stat-label">Color Themes</div>
+      </div>
+      <div class="stat reveal reveal-delay-2">
+        <div class="stat-val">16<span>MB</span></div>
+        <div class="stat-label">Flash Support</div>
+      </div>
+      <div class="stat reveal reveal-delay-3">
+        <div class="stat-val">0<span>$</span></div>
+        <div class="stat-label">Free & Open Source</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FEATURES -->
+  <section id="features">
+    <div class="section-inner">
+      <div class="features-header">
+        <div>
+          <div class="section-label reveal">Features</div>
+          <h2 class="section-title reveal">Everything you need<br>in one firmware</h2>
+        </div>
+        <p class="section-desc reveal">
+          TitanOs v2.0 is a complete rewrite. Every screen is double-buffered, every setting persists, and the UI adapts to your chosen color theme — all without flicker.
+        </p>
+      </div>
+      <div class="features-grid reveal">
+        <div class="feat">
+          <span class="feat-icon">🎨</span>
+          <h3>Modern UI</h3>
+          <p>Double-buffered sprite rendering via TFT_eSprite. Zero flicker. Topbar, botbar, scrollbar, progress bars on every screen.</p>
+          <span class="feat-tag new">NEW IN v2.0</span>
+        </div>
+        <div class="feat">
+          <span class="feat-icon">📶</span>
+          <h3>WiFi Attacks</h3>
+          <p>Deauth broadcast with live packet counter and pulsing animation. Evil Portal with real-time credential capture display.</p>
+          <span class="feat-tag">EDUCATIONAL ONLY</span>
+        </div>
+        <div class="feat">
+          <span class="feat-icon">🦷</span>
+          <h3>BLE Attack</h3>
+          <p>BLE flood coming in v2.1. The foundation is already in place — just waiting for implementation.</p>
+          <span class="feat-tag">COMING v2.1</span>
+        </div>
+        <div class="feat">
+          <span class="feat-icon">🐍</span>
+          <h3>Snake Game</h3>
+          <p>Playable Snake with grid display, topbar score, countdown, progressive speed increase, and a dramatic flashing game-over screen.</p>
+          <span class="feat-tag new">IMPROVED</span>
+        </div>
+        <div class="feat">
+          <span class="feat-icon">⚙️</span>
+          <h3>Persistent Settings</h3>
+          <p>5 color themes and brightness level stored in NVS via ESP32 Preferences. Your settings survive every reboot.</p>
+          <span class="feat-tag new">NEW IN v2.0</span>
+        </div>
+        <div class="feat">
+          <span class="feat-icon">🔋</span>
+          <h3>Battery Management</h3>
+          <p>Color-coded icon in topbar. Dedicated screen with large gauge + voltage in mV. ADC calibrated with 8-sample averaging.</p>
+          <span class="feat-tag new">IMPROVED</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ATTACKS -->
+  <section id="attacks">
+    <div class="section-inner">
+      <div class="attacks-layout">
+        <div>
+          <div class="section-label reveal">Attack Tools</div>
+          <h2 class="section-title reveal">Penetration<br>testing toolkit</h2>
+          <p class="section-desc reveal" style="margin-bottom:32px;">
+            Both attack modes are designed for network security research and testing. Use them exclusively on networks you own or have written permission to test.
+          </p>
+          <div class="hero-badges reveal">
+            <span class="badge red">⚠ Authorized Use Only</span>
+          </div>
+        </div>
+        <div class="attack-cards-stack">
+          <div class="attack-card reveal">
+            <div class="attack-card-header">
+              <h4>// DEAUTH ATTACK</h4>
+              <div class="dot red"></div>
+            </div>
+            <div class="attack-card-body">
+              <div class="terminal-line"><span class="prompt">›</span> Scanning networks<span class="cursor">_</span></div>
+              <div class="terminal-line"><span class="prompt">›</span> Found <span class="num">12</span> networks</div>
+              <div class="terminal-line"><span class="prompt">›</span> Target: <span class="val">HomeNetwork_5G</span> Ch<span class="num">6</span> <span class="num">-67</span>dBm</div>
+              <div class="terminal-line"><span class="prompt">›</span> Sending deauth frames...</div>
+              <div class="terminal-line"><span class="prompt">›</span> Packets sent: <span class="num">4832</span> | Time: <span class="num">48s</span></div>
+              <div class="terminal-line"><span class="ok">✓ Attack running — Press A to stop</span></div>
+            </div>
+          </div>
+          <div class="attack-card reveal reveal-delay-1">
+            <div class="attack-card-header">
+              <h4>// EVIL PORTAL</h4>
+              <div class="dot green"></div>
+            </div>
+            <div class="attack-card-body">
+              <div class="terminal-line"><span class="prompt">›</span> AP: <span class="val">Free_WiFi</span> (open)</div>
+              <div class="terminal-line"><span class="prompt">›</span> DNS redirect: <span class="ok">active</span></div>
+              <div class="terminal-line"><span class="prompt">›</span> Portal: <span class="val">Google Login</span></div>
+              <div class="terminal-line"><span class="err">! Credential captured:</span></div>
+              <div class="terminal-line">&nbsp;&nbsp;Email: <span class="val">victim@gmail.com</span></div>
+              <div class="terminal-line">&nbsp;&nbsp;Pass: <span class="num">••••••••</span> | Total: <span class="num">3</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- INSTALL -->
+  <section id="install">
+    <div class="section-inner">
+      <div class="section-label reveal">Installation</div>
+      <h2 class="section-title reveal" style="margin-bottom:60px;">Up and running<br>in minutes</h2>
+      <div class="install-layout">
+        <div class="steps reveal">
+          <div class="step">
+            <div class="step-line"></div>
+            <div class="step-num">01</div>
+            <div class="step-content">
+              <h4>Add ESP32 board URL</h4>
+              <p>In Arduino IDE, open File → Preferences and add the Espressif board manager URL.</p>
+              <div class="code-block">https://raw.githubusercontent.com/espressif/arduino-esp32/<br>gh-pages/package_esp32_index.json</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-line"></div>
+            <div class="step-num">02</div>
+            <div class="step-content">
+              <h4>Configure TFT_eSPI</h4>
+              <p>Install TFT_eSPI via Library Manager, then uncomment the T-Display-S3 setup file.</p>
+              <div class="code-block">#include &lt;User_Setups/Setup206_LilyGo_T_Display_S3.h&gt;</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-line"></div>
+            <div class="step-num">03</div>
+            <div class="step-content">
+              <h4>Set board parameters</h4>
+              <p>Flash Size: 16MB · Partition: 16M Flash · PSRAM: OPI · Speed: 921600</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">04</div>
+            <div class="step-content">
+              <h4>Flash & boot</h4>
+              <p>Connect via USB-C and click Upload. Hold BOOT + press RST if the port isn't detected.</p>
+            </div>
+          </div>
+        </div>
+        <div class="install-right reveal reveal-delay-1">
+          <div class="spec-table">
+            <div class="spec-row">
+              <div class="spec-key">Board</div>
+              <div class="spec-val">Lilygo T-Display-S3</div>
+            </div>
+            <div class="spec-row">
+              <div class="spec-key">MCU</div>
+              <div class="spec-val">ESP32-S3 @ 240MHz</div>
+            </div>
+            <div class="spec-row">
+              <div class="spec-key">Display</div>
+              <div class="spec-val">ST7789V 320×170</div>
+            </div>
+            <div class="spec-row">
+              <div class="spec-key">Flash</div>
+              <div class="spec-val">16 MB</div>
+            </div>
+            <div class="spec-row">
+              <div class="spec-key">PSRAM</div>
+              <div class="spec-val">8 MB OPI</div>
+            </div>
+            <div class="spec-row">
+              <div class="spec-key">Button A</div>
+              <div class="spec-val">GPIO0 (Boot)</div>
+            </div>
+            <div class="spec-row">
+              <div class="spec-key">Button B</div>
+              <div class="spec-val">GPIO14</div>
+            </div>
+            <div class="spec-row">
+              <div class="spec-key">Backlight</div>
+              <div class="spec-val">GPIO38 (PWM)</div>
+            </div>
+          </div>
+          <div class="flash-box">
+            <p>Download the latest release and flash it directly from your browser using the GitHub releases page.</p>
+            <a href="https://github.com/Titan-CyberTech/TitanOs-Firmware-TS3/releases" target="_blank" class="btn-primary" style="display:inline-flex; margin:0 auto;">
+              ⬇ Download v2.0.0
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CHANGELOG -->
+  <section id="changelog">
+    <div class="section-inner">
+      <div class="section-label reveal">History</div>
+      <h2 class="section-title reveal" style="margin-bottom:48px;">Changelog</h2>
+      <div class="changelog-layout reveal">
+        <div class="version-list">
+          <button class="version-btn active" onclick="showVersion('v200')">
+            v2.0.0 <span class="version-badge">latest</span>
+          </button>
+          <button class="version-btn" onclick="showVersion('v116')">
+            v1.1.6 <span class="version-badge old">stable</span>
+          </button>
+          <button class="version-btn" onclick="showVersion('v115')">
+            v1.1.5 <span class="version-badge old">old</span>
+          </button>
+        </div>
+        <div>
+          <div class="changelog-content active" id="v200">
+            <div class="changelog-header">
+              <div class="changelog-version">v2.0.0</div>
+              <div class="changelog-date">2025 — Full rewrite</div>
+            </div>
+            <div class="changelog-group">
+              <div class="changelog-group-title">Added</div>
+              <ul class="changelog-items">
+                <li><strong>Double-buffered rendering</strong> via TFT_eSprite — zero flicker on all screens</li>
+                <li><strong>Persistent settings</strong> via ESP32 NVS — theme and brightness survive reboot</li>
+                <li><strong>5 color themes</strong> : Violet, Cyan, Orange, Green, Red</li>
+                <li><strong>Topbar / Botbar</strong> UI on every screen with contextual button hints</li>
+                <li><strong>Battery icon</strong> in topbar — color-coded (green / yellow / red) with % inside</li>
+                <li><strong>Animated splash screen</strong> with loading bar</li>
+                <li><strong>System Info</strong> — responsive 2×4 card grid layout</li>
+                <li><strong>Snake</strong> — score, progressive speed, countdown, flashing game-over</li>
+                <li><strong>Evil Portal</strong> — real-time credential display, capture counter, blink indicator</li>
+              </ul>
+            </div>
+            <div class="changelog-group">
+              <div class="changelog-group-title">Fixed</div>
+              <ul class="changelog-items">
+                <li><strong>Battery screen crash</strong> — button state not cleared caused stack overflow on return</li>
+                <li><strong>Brightness not changing</strong> — 200ms debounce was swallowing button presses</li>
+                <li><strong>Backlight pin</strong> corrected to GPIO38 (was GPIO15 in v1)</li>
+              </ul>
+            </div>
+            <div class="changelog-group">
+              <div class="changelog-group-title">Changed</div>
+              <ul class="changelog-items">
+                <li>Complete architecture rewrite — one module per responsibility</li>
+                <li>ADC now uses esp_adc_cal with 8-sample averaging for accurate battery readings</li>
+                <li>All header guards replaced with #pragma once</li>
+              </ul>
+            </div>
+          </div>
+          <div class="changelog-content" id="v116">
+            <div class="changelog-header">
+              <div class="changelog-version">v1.1.6</div>
+              <div class="changelog-date">2024 — Last stable v1</div>
+            </div>
+            <div class="changelog-group">
+              <div class="changelog-group-title">Features</div>
+              <ul class="changelog-items">
+                <li>Basic menu navigation with A/B buttons</li>
+                <li>WiFi Deauth attack — broadcast mode</li>
+                <li>Evil Portal — Google login page capture</li>
+                <li>Snake game — basic implementation</li>
+                <li>Battery voltage display</li>
+                <li>Settings — color and brightness</li>
+                <li>Auto-sleep after 15s</li>
+              </ul>
+            </div>
+          </div>
+          <div class="changelog-content" id="v115">
+            <div class="changelog-header">
+              <div class="changelog-version">v1.1.5</div>
+              <div class="changelog-date">2024</div>
+            </div>
+            <div class="changelog-group">
+              <div class="changelog-group-title">Changes</div>
+              <ul class="changelog-items">
+                <li>Improved WiFi scan reliability</li>
+                <li>Fixed brightness step overflow bug</li>
+                <li>Added deep sleep wake on button B</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- COMMUNITY -->
+  <section id="community">
+    <div class="community-inner">
+      <div>
+        <div class="section-label reveal">Community</div>
+        <h2 class="section-title reveal">Join the project</h2>
+        <p class="section-desc reveal" style="margin-top:16px;">
+          Questions, ideas, bug reports — come talk on Discord or watch tutorials on YouTube. The project is fully open-source, contributions are welcome.
+        </p>
+      </div>
+      <div class="community-links reveal">
+        <a href="https://discord.gg/WqnqmMwwhd" target="_blank" class="community-link">
+          <div class="community-link-icon discord">💬</div>
+          <div class="community-link-text">
+            <h4>Discord</h4>
+            <p>Community support & announcements</p>
+          </div>
+          <span class="community-link-arrow">↗</span>
+        </a>
+        <a href="https://www.youtube.com/@TitanTech-CyberTech" target="_blank" class="community-link">
+          <div class="community-link-icon youtube">▶</div>
+          <div class="community-link-text">
+            <h4>YouTube</h4>
+            <p>Tutorials, demos & updates</p>
+          </div>
+          <span class="community-link-arrow">↗</span>
+        </a>
+        <a href="https://github.com/Titan-CyberTech/TitanOs-Firmware-TS3" target="_blank" class="community-link">
+          <div class="community-link-icon github">⌥</div>
+          <div class="community-link-text">
+            <h4>GitHub</h4>
+            <p>Source code, issues & releases</p>
+          </div>
+          <span class="community-link-arrow">↗</span>
+        </a>
+        <a href="https://www.paypal.com/paypalme/TitanCyberTech?country.x=FR&locale.x=fr_FR" target="_blank" class="community-link">
+          <div class="community-link-icon" style="background:rgba(0,112,186,0.15);">💙</div>
+          <div class="community-link-text">
+            <h4>Donate</h4>
+            <p>Support the development via PayPal</p>
+          </div>
+          <span class="community-link-arrow">↗</span>
+        </a>
+      </div>
+    </div>
+  </section>
 
   <!-- FOOTER -->
-  <footer class="footer">
-    <div class="container">
-      <div class="footer-icons">
-        <a href="https://discord.gg/WqnqmMwwhd" target="_blank" rel="noopener noreferrer" aria-label="Discord">
-          <img src="assets/img/discord.png" alt="Discord">
-        </a>
-        <a href="https://www.youtube.com/@TitanTech-CyberTech" target="_blank" rel="noopener noreferrer" aria-label="YouTube">
-          <img src="assets/img/youtube.png" alt="YouTube">
-        </a>
-      </div>
-      <p>&copy; 2025 TitanOs Firmware. Tous droits réservés.</p>
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-copy">© 2025 TITAN-CYBERTECH — MIT LICENSE</div>
+      <div class="footer-warning">⚠ FOR EDUCATIONAL USE ONLY</div>
+      <div class="footer-copy">TITANOS v2.0.0</div>
     </div>
   </footer>
 
-  <script src="scripts/active.js"></script>
+  <script>
+    // ── Scroll reveal ────────────────────────────────────────
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add('visible');
+          observer.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.1 });
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+    // ── Active nav link ──────────────────────────────────────
+    const sections = document.querySelectorAll('section[id]');
+    const navLinks = document.querySelectorAll('.nav-link');
+    window.addEventListener('scroll', () => {
+      let current = '';
+      sections.forEach(s => {
+        if (window.scrollY >= s.offsetTop - 100) current = s.id;
+      });
+      navLinks.forEach(l => {
+        l.classList.remove('active');
+        if (l.getAttribute('href') === '#' + current) l.classList.add('active');
+      });
+    });
+
+    // ── Changelog tabs ───────────────────────────────────────
+    function showVersion(id) {
+      document.querySelectorAll('.changelog-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.version-btn').forEach(el => el.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+      event.currentTarget.classList.add('active');
+    }
+
+    // ── Animated packet counter on deauth card ───────────────
+    let packets = 4832;
+    setInterval(() => {
+      packets += Math.floor(Math.random() * 12 + 4);
+      const el = document.querySelector('.terminal-line .num');
+      if (el) el.textContent = packets.toLocaleString();
+    }, 120);
+  </script>
 </body>
 </html>
